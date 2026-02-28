@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import https from 'https';
+import { spawn } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -354,10 +355,6 @@ app.listen(PORT, '0.0.0.0', () => {
 });
 
 // ==================== EBOOK PROCESSING ====================
-import { spawn } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 
 // Process ebook file
 app.post('/api/ebook/process', upload.single('file'), async (req, res) => {
