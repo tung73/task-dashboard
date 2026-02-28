@@ -352,3 +352,83 @@ app.get('/api/stats', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+// ==================== EBOOK PROCESSING ====================
+import { spawn } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
+
+// Process ebook file
+app.post('/api/ebook/process', upload.single('file'), async (req, res) => {
+  try {
+    const filePath = req.file ? req.file.path : null;
+    const taskId = req.body.taskId;
+    
+    if (!filePath) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    
+    const ext = path.extname(filePath).toLowerCase();
+    if (!['.epub', '.mobi'].includes(ext)) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ error: 'Only epub and mobi files are supported' });
+    }
+    
+    // Run Python script
+    const pythonScript = path.join(__dirname, 'services', 'ebook.py');
+    const result = await new Promise((resolve, reject) => {
+      const process = spawn('python3', [pythonScript, filePath]);
+      let stdout = '';
+      let stderr = '';
+      
+      process.stdout.on('data', (data) => { stdout += data; });
+      process.stderr.on('data', (data) => { stderr += data; });
+      
+      process.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(stderr || 'Processing failed'));
+        } else {
+          try {
+            resolve(JSON.parse(stdout));
+          } catch (e) {
+            reject(new Error('Invalid output from processing script'));
+          }
+        }
+      });
+    });
+    
+    // Save result to task if taskId provided
+    if (taskId) {
+      db.prepare('UPDATE tasks SET result = ? WHERE id = ?').run(JSON.stringify(result), taskId);
+      db.prepare('INSERT INTO task_logs (task_id, action, details) VALUES (?, ?, ?)').run(
+        taskId, 'ebook_processed', `Processed: ${result.metadata?.title || 'Unknown'}`
+      );
+    }
+    
+    res.json(result);
+    
+  } catch (error) {
+    console.error('Ebook processing error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Generate summary using AI (placeholder - would integrate with AI API)
+app.post('/api/ebook/summarize', async (req, res) => {
+  const { text, maxLength = 1000 } = req.body;
+  
+  if (!text) {
+    return res.status(400).json({ error: 'No text provided' });
+  }
+  
+  // This is a placeholder - in production, you'd call an AI API here
+  // For now, return a basic summary (first N characters)
+  const summary = text.substring(0, maxLength);
+  
+  res.json({
+    summary,
+    originalLength: text.length,
+    summaryLength: summary.length
+  });
+});
