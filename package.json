@@ -1,0 +1,13 @@
+{
+  "name": "task-dashboard",
+  "version": "1.0.0",
+  "description": "Dashboard and todo list for human-AI collaboration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "body-parser": "^1.20.2"
+  }
+}

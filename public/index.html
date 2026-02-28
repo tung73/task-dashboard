@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    
+    header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+    header h1 { font-size: 1.8rem; }
+    header p { opacity: 0.9; margin-top: 5px; }
+    
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    .stat-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
+    .stat-card .number { font-size: 2rem; font-weight: bold; color: #667eea; }
+    .stat-card .label { color: #666; font-size: 0.9rem; margin-top: 5px; }
+    
+    .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .main-content { grid-template-columns: 1fr; } }
+    
+    .panel { background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow: hidden; }
+    .panel-header { background: #f8f9fa; padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+    .panel-header h2 { font-size: 1.2rem; }
+    .panel-body { padding: 20px; max-height: 500px; overflow-y: auto; }
+    
+    .task-input { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+    .task-input input, .task-input select { padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex: 1; min-width: 150px; }
+    .task-input button { padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    .task-input button:hover { background: #5568d3; }
+    
+    .task-list { list-style: none; }
+    .task-item { display: flex; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid #eee; }
+    .task-item:last-child { border-bottom: none; }
+    .task-item.completed .task-title { text-decoration: line-through; color: #999; }
+    .task-checkbox { width: 20px; height: 20px; cursor: pointer; }
+    .task-title { flex: 1; }
+    .task-priority { font-size: 0.75rem; padding: 3px 8px; border-radius: 10px; }
+    .priority-high { background: #fee; color: #c00; }
+    .priority-normal { background: #eef; color: #00c; }
+    .priority-low { background: #efe; color: #080; }
+    .task-delete { background: none; border: none; color: #999; cursor: pointer; font-size: 1.2rem; }
+    .task-delete:hover { color: #c00; }
+    
+    .message-list { display: flex; flex-direction: column; gap: 10px; }
+    .message { padding: 12px; border-radius: 8px; max-width: 80%; }
+    .message.user { background: #667eea; color: white; align-self: flex-end; }
+    .message.ai { background: #f0f0f0; color: #333; align-self: flex-start; }
+    .message-time { font-size: 0.7rem; opacity: 0.7; margin-top: 5px; }
+    
+    .message-input { display: flex; gap: 10px; margin-top: 15px; }
+    .message-input input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+    .message-input button { padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🤖 Task Dashboard</h1>
+      <p>Manage tasks and communicate with your AI assistant</p>
+    </header>
+    
+    <div class="stats">
+      <div class="stat-card">
+        <div class="number" id="stat-total">0</div>
+        <div class="label">Total Tasks</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="stat-completed">0</div>
+        <div class="label">Completed</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="stat-pending">0</div>
+        <div class="label">Pending</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="stat-high">0</div>
+        <div class="label">High Priority</div>
+      </div>
+    </div>
+    
+    <div class="main-content">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>📝 Tasks</h2>
+        </div>
+        <div class="panel-body">
+          <div class="task-input">
+            <input type="text" id="task-title" placeholder="What needs to be done?">
+            <select id="task-priority">
+              <option value="normal">Normal</option>
+              <option value="high">High Priority</option>
+              <option value="low">Low Priority</option>
+            </select>
+            <button onclick="addTask()">Add Task</button>
+          </div>
+          <ul class="task-list" id="task-list"></ul>
+        </div>
+      </div>
+      
+      <div class="panel">
+        <div class="panel-header">
+          <h2>💬 Messages</h2>
+        </div>
+        <div class="panel-body">
+          <div class="message-list" id="message-list"></div>
+          <div class="message-input">
+            <input type="text" id="message-text" placeholder="Leave a note for your AI..." onkeypress="if(event.key==='Enter')sendMessage()">
+            <button onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = '';
+    
+    async function loadTasks() {
+      const res = await fetch(API + '/api/tasks');
+      const tasks = await res.json();
+      const list = document.getElementById('task-list');
+      list.innerHTML = tasks.map(t => `
+        <li class="task-item ${t.completed ? 'completed' : ''}">
+          <input type="checkbox" class="task-checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${t.id}, this.checked)">
+          <span class="task-title">${escapeHtml(t.title)}</span>
+          <span class="task-priority priority-${t.priority}">${t.priority}</span>
+          <button class="task-delete" onclick="deleteTask(${t.id})">×</button>
+        </li>
+      `).join('');
+      updateStats(tasks);
+    }
+    
+    async function addTask() {
+      const title = document.getElementById('task-title').value.trim();
+      const priority = document.getElementById('task-priority').value;
+      if (!title) return;
+      
+      await fetch(API + '/api/tasks', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ title, priority })
+      });
+      
+      document.getElementById('task-title').value = '';
+      loadTasks();
+    }
+    
+    async function toggleTask(id, completed) {
+      await fetch(API + '/api/tasks/' + id, {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ completed })
+      });
+      loadTasks();
+    }
+    
+    async function deleteTask(id) {
+      await fetch(API + '/api/tasks/' + id, { method: 'DELETE' });
+      loadTasks();
+    }
+    
+    function updateStats(tasks) {
+      const completed = tasks.filter(t => t.completed).length;
+      const pending = tasks.filter(t => !t.completed).length;
+      const high = tasks.filter(t => t.priority === 'high' && !t.completed).length;
+      
+      document.getElementById('stat-total').textContent = tasks.length;
+      document.getElementById('stat-completed').textContent = completed;
+      document.getElementById('stat-pending').textContent = pending;
+      document.getElementById('stat-high').textContent = high;
+    }
+    
+    async function loadMessages() {
+      const res = await fetch(API + '/api/messages');
+      const messages = await res.json();
+      const list = document.getElementById('message-list');
+      list.innerHTML = messages.map(m => `
+        <div class="message ${m.type}">
+          <div>${escapeHtml(m.text)}</div>
+          <div class="message-time">${new Date(m.createdAt).toLocaleString()}</div>
+        </div>
+      `).join('');
+      list.scrollTop = list.scrollHeight;
+    }
+    
+    async function sendMessage() {
+      const text = document.getElementById('message-text').value.trim();
+      if (!text) return;
+      
+      await fetch(API + '/api/messages', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ text, type: 'user' })
+      });
+      
+      document.getElementById('message-text').value = '';
+      loadMessages();
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    loadTasks();
+    loadMessages();
+    setInterval(loadTasks, 5000);
+    setInterval(loadMessages, 5000);
+  </script>
+</body>
+</html>

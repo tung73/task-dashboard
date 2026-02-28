@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Data
+tasks.json
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cloudflare/ngrok
+*.cloudflare
