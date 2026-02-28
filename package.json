@@ -1,13 +1,15 @@
 {
-  "name": "task-dashboard",
-  "version": "1.0.0",
-  "description": "Dashboard and todo list for human-AI collaboration",
-  "main": "server.js",
+  "name": "taskhub-ai",
+  "version": "2.0.0",
+  "description": "Task management dashboard with AI integration",
   "scripts": {
-    "start": "node server.js"
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start"
   },
-  "dependencies": {
-    "express": "^4.18.2",
-    "body-parser": "^1.20.2"
+  "devDependencies": {
+    "concurrently": "^8.2.0"
   }
 }
